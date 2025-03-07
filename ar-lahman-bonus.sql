@@ -1,4 +1,3 @@
-
 -- In these exercises, you'll explore a couple of other advanced features of PostgreSQL. 
 --------------------------------------------------------------------------------
 -- 1. In this question, you'll get to practice correlated subqueries and learn about the LATERAL keyword. Note: This could be done using window functions, but we'll do it in a different way in order to revisit correlated subqueries and see another keyword - LATERAL.
@@ -143,13 +142,94 @@ FROM people AS p
 GROUP BY playerid;
 
 
-
-
 -- b. Use your previous result inside a subquery using LATERAL to calculate for each player their age at debut and age at retirement. (Hint: It might be useful to check out the PostgreSQL date and time functions https://www.postgresql.org/docs/8.4/functions-datetime.html).
+
+SELECT 
+    p.playerid, 
+    dates.playername,
+    dates.birthdate,
+    dates.debut_date,
+    EXTRACT(YEAR FROM AGE(dates.debut_date, dates.birthdate)) AS age_at_debut,
+    EXTRACT(YEAR FROM AGE(dates.retirement_date, dates.birthdate)) AS age_at_retirement
+FROM people p,
+LATERAL (
+    SELECT
+        namefirst||' '||namelast AS playername,
+        CAST(birthyear||'-'||birthmonth||'-'||birthday AS DATE) AS birthdate,
+        debut::DATE AS debut_date,
+        finalgame::DATE AS retirement_date
+    FROM people 
+    WHERE playerid = p.playerid
+        AND birthyear IS NOT NULL 
+        AND birthmonth IS NOT NULL 
+        AND birthday IS NOT NULL 
+        AND debut IS NOT NULL
+        AND finalgame IS NOT NULL
+    LIMIT 1
+) dates;
+
+
+
+
+
 
 -- c. Who is the youngest player to ever play in the major leagues?
 
+-- Joe Nuxhall debuted at 15 years old, and retired at 38 years old. 
+
+SELECT 
+    p.playerid, 
+    dates.playername,
+    dates.birthdate,
+    dates.debut_date,
+    EXTRACT(YEAR FROM AGE(dates.debut_date, dates.birthdate)) AS age_at_debut,
+    EXTRACT(YEAR FROM AGE(dates.retirement_date, dates.birthdate)) AS age_at_retirement
+FROM people p,
+LATERAL (
+    SELECT
+        namefirst||' '||namelast AS playername,
+        CAST(birthyear||'-'||birthmonth||'-'||birthday AS DATE) AS birthdate,
+        debut::DATE AS debut_date,
+        finalgame::DATE AS retirement_date
+    FROM people 
+    WHERE playerid = p.playerid
+        AND birthyear IS NOT NULL 
+        AND birthmonth IS NOT NULL 
+        AND birthday IS NOT NULL 
+        AND debut IS NOT NULL
+        AND finalgame IS NOT NULL
+    LIMIT 1
+) dates
+ORDER BY age_at_debut
+LIMIT 1;
 -- d. Who is the oldest player to player in the major leagues? You'll likely have a lot of null values resulting in your age at retirement calculation. Check out the documentation on sorting rows here https://www.postgresql.org/docs/8.3/queries-order.html about how you can change how null values are sorted.
+
+-- Satchel Paige retired at 59 years old
+SELECT 
+    p.playerid, 
+    dates.playername,
+    dates.birthdate,
+    dates.debut_date,
+    EXTRACT(YEAR FROM AGE(dates.debut_date, dates.birthdate)) AS age_at_debut,
+    EXTRACT(YEAR FROM AGE(dates.retirement_date, dates.birthdate)) AS age_at_retirement
+FROM people p,
+LATERAL (
+    SELECT
+        namefirst||' '||namelast AS playername,
+        CAST(birthyear||'-'||birthmonth||'-'||birthday AS DATE) AS birthdate,
+        debut::DATE AS debut_date,
+        finalgame::DATE AS retirement_date
+    FROM people 
+    WHERE playerid = p.playerid
+        AND birthyear IS NOT NULL 
+        AND birthmonth IS NOT NULL 
+        AND birthday IS NOT NULL 
+        AND debut IS NOT NULL
+        AND finalgame IS NOT NULL
+    LIMIT 1
+) dates
+ORDER BY age_at_retirement DESC;
+
 
 --------------------------------------------------------------------------------
 -- 3. For this question, you will want to make use of RECURSIVE CTEs (see https://www.postgresql.org/docs/13/queries-with.html). The RECURSIVE keyword allows a CTE to refer to its own output. Recursive CTEs are useful for navigating network datasets such as social networks, logistics networks, or employee hierarchies (who manages who and who manages that person). To see an example of the last item, see this tutorial: https://www.postgresqltutorial.com/postgresql-recursive-query/. 
